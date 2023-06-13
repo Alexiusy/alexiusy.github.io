@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="众所周知，iOS 没有真正的后台，而是所谓的“假后台”。那么如果确实有需要在后台完成的任务需要怎么做呢？有如下几种方法可供选择。 1. 在后台继续前台未完成的工作在某些情况下，用户在前台有未完成任务的时候就将应用切到了后台或者是锁屏，这个时候，任务不会继续执行，除非我们能够让其在后台能够继续执行。比如一个图片下载任务，如果切到了后台，为了让其能够继续下载，需要在开启下载任务的同时开始一个后台任务，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于后台任务的选择">
+<meta property="og:url" content="http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/index.html">
+<meta property="og:site_name" content="Alexius&#39;s Utopia">
+<meta property="og:description" content="众所周知，iOS 没有真正的后台，而是所谓的“假后台”。那么如果确实有需要在后台完成的任务需要怎么做呢？有如下几种方法可供选择。 1. 在后台继续前台未完成的工作在某些情况下，用户在前台有未完成任务的时候就将应用切到了后台或者是锁屏，这个时候，任务不会继续执行，除非我们能够让其在后台能够继续执行。比如一个图片下载任务，如果切到了后台，为了让其能够继续下载，需要在开启下载任务的同时开始一个后台任务，">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-03-06T03:36:56.000Z">
+<meta property="article:modified_time" content="2023-06-13T02:42:40.515Z">
+<meta property="article:author" content="Alexius">
+<meta property="article:tag" content="后台任务">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+          
+              <link rel="shortcut icon" href="/images/favicon.ico">
+          
+        
+        
+          
+            <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+          
+        
+        
+          
+            <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+          
+        
+    
+    <!-- title -->
+    <title>关于后台任务的选择</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2020/06/12/%E5%9C%A8Swift%E4%B8%AD%E5%AE%9E%E7%8E%B0MVVM/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2020/02/12/SwiftUI%E4%B8%AD%E7%9A%84Property-Wrapper-01/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&text=关于后台任务的选择"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&title=关于后台任务的选择"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&is_video=false&description=关于后台任务的选择"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=关于后台任务的选择&body=Check out this article: http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&title=关于后台任务的选择"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&title=关于后台任务的选择"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&title=关于后台任务的选择"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&title=关于后台任务的选择"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&name=关于后台任务的选择&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&t=关于后台任务的选择"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E5%9C%A8%E5%90%8E%E5%8F%B0%E7%BB%A7%E7%BB%AD%E5%89%8D%E5%8F%B0%E6%9C%AA%E5%AE%8C%E6%88%90%E7%9A%84%E5%B7%A5%E4%BD%9C"><span class="toc-number">1.</span> <span class="toc-text">1. 在后台继续前台未完成的工作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-BackgroundTasks"><span class="toc-number">2.</span> <span class="toc-text">2. BackgroundTasks</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E5%88%A9%E7%94%A8%E6%8E%A8%E9%80%81%E6%89%A7%E8%A1%8C%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1"><span class="toc-number">3.</span> <span class="toc-text">3. 利用推送执行后台任务</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#3-1-%E5%90%8E%E5%8F%B0%E6%8E%A8%E9%80%81"><span class="toc-number">3.1.</span> <span class="toc-text">3.1 后台推送</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-2-%E6%8E%A8%E9%80%81%E6%9C%8D%E5%8A%A1%E6%89%A9%E5%B1%95"><span class="toc-number">3.2.</span> <span class="toc-text">3.2 推送服务扩展</span></a></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        关于后台任务的选择
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Alexius's Utopia</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2020-03-06T03:36:56.000Z" itemprop="datePublished">2020-03-06</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/categories/iOS/">iOS</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1/" rel="tag">后台任务</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>众所周知，iOS 没有真正的后台，而是所谓的“假后台”。那么如果确实有需要在后台完成的任务需要怎么做呢？有如下几种方法可供选择。</p>
+<h3 id="1-在后台继续前台未完成的工作"><a href="#1-在后台继续前台未完成的工作" class="headerlink" title="1. 在后台继续前台未完成的工作"></a>1. 在后台继续前台未完成的工作</h3><p>在某些情况下，用户在前台有未完成任务的时候就将应用切到了后台或者是锁屏，这个时候，任务不会继续执行，除非我们能够让其在后台能够继续执行。<br>比如一个图片下载任务，如果切到了后台，为了让其能够继续下载，需要在开启下载任务的同时开始一个后台任务，这样在应用切到后台的时候，可以在有限时间内继续下载。</p>
+<p>此处使用 <code>UIApplication</code> 的 <code>beginBackgroundTask</code> 方法来开启后台任务。这个方法提供了一个后台任务截止时间的回调并返回一个后台任务标识符，可通过标识符来结束后台任务。如果没有在指定时间内手动结束后台任务，则 <code>expirationHandler</code> 会被调用，这是最后一次能够处理任务的时机，可以发送任务状态的通知等。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">download</span>(<span class="keyword">_</span> <span class="params">url</span>: <span class="type">URL</span>) &#123;</span><br><span class="line">	<span class="keyword">let</span> downloadOperation <span class="operator">=</span> <span class="type">DownloadOperation</span>(with: url)</span><br><span class="line">	<span class="keyword">let</span> identifier: <span class="type">UIBackgroundTaskIdentifier</span>!</span><br><span class="line">	identifier <span class="operator">=</span> <span class="type">UIApplication</span>.shared.beginBackgroundTask(expirationHandler: &#123;</span><br><span class="line">		downloadOperation.cancel()</span><br><span class="line">		<span class="built_in">print</span>(<span class="string">&quot;Download task not finished.&quot;</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">	downloadOperation.completionHandler <span class="operator">=</span> &#123;</span><br><span class="line">		<span class="type">UIApplication</span>.shared.endBackgroundTask(identifier)</span><br><span class="line">	&#125;</span><br><span class="line">	downloadOperation.download()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-BackgroundTasks"><a href="#2-BackgroundTasks" class="headerlink" title="2. BackgroundTasks"></a>2. BackgroundTasks</h3><p>在 iOS 13之前，我们使用如下方式来执行后台任务：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">UIApplication</span>.shared.setMinimumBackgroundFetchInterval(<span class="number">60</span>)</span><br><span class="line"><span class="keyword">func</span> <span class="title function_">application</span>(<span class="keyword">_</span> <span class="params">application</span>: <span class="type">UIApplication</span>, <span class="params">performFetchWithCompletionHandler</span> <span class="params">completionHandler</span>: <span class="keyword">@escaping</span> (<span class="type">UIBackgroundFetchResult</span>) -&gt; <span class="type">Void</span>) &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>但是在 iOS 13之后，上述方法已经被弃用，被一个新的后台任务框架 <code>BackgroundTasks</code> 所取代。<br><code>BackgroundTasks</code> 有两种后台任务可供选择，一种是 <code>BGProcessingTask</code> ，一般用于处理较为繁重的任务，如数据维护，机器学习模型训练，数据同步等。另外一种是 <code>BGAppRefreshTask</code> ，用于在后台更新应用内容，这样用户每次打开应用时所查看到的内容都是最新的。<code>BGAppRefreshTask</code> 有最多 30 秒的时间来执行更新任务，任务完成之后要调用 <code>setTaskCompleted(success:)</code>，否则系统会终止应用程序。<br>详情请查看 [[BackgroundTasks 实践#^a71227|BackgroundTasks]]</p>
+<h3 id="3-利用推送执行后台任务"><a href="#3-利用推送执行后台任务" class="headerlink" title="3. 利用推送执行后台任务"></a>3. 利用推送执行后台任务</h3><h4 id="3-1-后台推送"><a href="#3-1-后台推送" class="headerlink" title="3.1 后台推送"></a>3.1 后台推送</h4><p>在 iOS7 的时候，苹果允许应用收到通知后在后台状态下运行一段代码，这样应用就可以在不打扰用户的情况下静默更新内容。如果应用会不定期地从服务器获取新内容，在新内容可用时就可使用后台推送来通知我们的应用。<br>推送一个后台通知需要满足如下设置：</p>
+<ul>
+<li><code>content-available</code> 设置为 1；</li>
+<li>不设置 <code>alert</code>、<code>sound</code> 和 <code>badge</code>;</li>
+<li><code>apns-push-type</code> 设置为 <code>background</code>；</li>
+<li><code>apns-priority</code> 设置为5。<br>一个典型的后台 APNs 如下所示：<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">	<span class="attr">&quot;aps&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span></span><br><span class="line">		<span class="attr">&quot;content-available&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">		<span class="attr">&quot;apns-push-type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;background&quot;</span><span class="punctuation">,</span></span><br><span class="line">		<span class="attr">&quot;apns-priority&quot;</span><span class="punctuation">:</span> <span class="number">5</span></span><br><span class="line">	<span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;additional&quot;</span><span class="punctuation">:</span> <span class="string">&quot;background push notification&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+后台通知优先级较低，因此系统并不能保证其一定能被送达。另外要注意时间和频率的限制。一旦应用接收到后台推送，会调用系统代理<code>application(_:didReceiveRemoteNotification:fetchCompletionHandler:)</code>。只有最多 30s 的时间去完成相应的工作，只要完成了后台任务，就要尽可能早地调用  <code>fetchCompletionHandler</code> 以节省电池。苹果建议每小时最多不要发送超过3条后台推送，否则系统会增加速率限制。</li>
+</ul>
+<p>在同一时间，只会存在最新的一条后台推送，如果用户手动杀掉应用程序后台，系统会丢弃已收到的后台通知。如果用户启动了应用程序，则系统会立即发送所收到的通知。</p>
+<blockquote>
+<p><strong>App的状态限制</strong><br>后台推送的前提是应用需处于 background 或 suspended 状态，如果应用是被用户手动杀掉的话则无法被唤醒并处理后台推送。</p>
+</blockquote>
+<h4 id="3-2-推送服务扩展"><a href="#3-2-推送服务扩展" class="headerlink" title="3.2 推送服务扩展"></a>3.2 推送服务扩展</h4><p>通过通知服务扩展，我们也可以在收到通知后进行一些处理后再将通知传达给用户。<br>新建 <code>UNNotificationServiceExtension</code>，当收到通知时，通知服务扩展会被唤醒同时获得后台任务的执行时间。此时 <code>didReceive(_:withContentHandler:)</code>  会被调用，当完成所需要处理的任务时，调用 <code>contentHandler</code> 来结束整个流程。</p>
+<blockquote>
+<p>通知服务扩展需要将推送通知的 <code>mutable-content</code> 设置为1。</p>
+</blockquote>
+<blockquote>
+<p><strong>参考资料</strong><br><a target="_blank" rel="noopener" href="https://developer.apple.com/videos/play/wwdc2019/707">Advances in App Background Execution</a></p>
+</blockquote>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E5%9C%A8%E5%90%8E%E5%8F%B0%E7%BB%A7%E7%BB%AD%E5%89%8D%E5%8F%B0%E6%9C%AA%E5%AE%8C%E6%88%90%E7%9A%84%E5%B7%A5%E4%BD%9C"><span class="toc-number">1.</span> <span class="toc-text">1. 在后台继续前台未完成的工作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-BackgroundTasks"><span class="toc-number">2.</span> <span class="toc-text">2. BackgroundTasks</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E5%88%A9%E7%94%A8%E6%8E%A8%E9%80%81%E6%89%A7%E8%A1%8C%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1"><span class="toc-number">3.</span> <span class="toc-text">3. 利用推送执行后台任务</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#3-1-%E5%90%8E%E5%8F%B0%E6%8E%A8%E9%80%81"><span class="toc-number">3.1.</span> <span class="toc-text">3.1 后台推送</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-2-%E6%8E%A8%E9%80%81%E6%9C%8D%E5%8A%A1%E6%89%A9%E5%B1%95"><span class="toc-number">3.2.</span> <span class="toc-text">3.2 推送服务扩展</span></a></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&text=关于后台任务的选择"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&title=关于后台任务的选择"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&is_video=false&description=关于后台任务的选择"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=关于后台任务的选择&body=Check out this article: http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&title=关于后台任务的选择"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&title=关于后台任务的选择"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&title=关于后台任务的选择"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&title=关于后台任务的选择"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&name=关于后台任务的选择&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2020/03/06/%E5%85%B3%E4%BA%8E%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E9%80%89%E6%8B%A9/&t=关于后台任务的选择"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2014-2023
+    Alexius
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+  <script async src="https://busuanzi.icodeq.com/busuanzi.pure.mini.js"></script>
+
+  <div>
+    本文总阅读量 <span id="busuanzi_value_page_pv"></span> 次
+    本站总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    本站总访客数 <span id="busuanzi_value_site_uv"></span> 人
+  </div>
+
+</footer>
+
+
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Disqus Comments -->
+
+
+</body>
+</html>

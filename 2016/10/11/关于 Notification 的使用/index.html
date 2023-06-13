@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="0x00 前言一直以来，对于 Notification 的使用都理解得不是特别透彻，dealloc 中要不要移除 observer，block 中要不要加 weak，一直都是能加就加，根本未考虑过为什么要加或者说为什么可以不加。这篇记录就将这些问题一次性地弄个明白。 0x01 removeObserver?Apple 的官方文档说明中，在 iOS 9.0，macOS 10.11 及以后的系统版本中">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于 Notification 的使用">
+<meta property="og:url" content="http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/index.html">
+<meta property="og:site_name" content="Alexius&#39;s Utopia">
+<meta property="og:description" content="0x00 前言一直以来，对于 Notification 的使用都理解得不是特别透彻，dealloc 中要不要移除 observer，block 中要不要加 weak，一直都是能加就加，根本未考虑过为什么要加或者说为什么可以不加。这篇记录就将这些问题一次性地弄个明白。 0x01 removeObserver?Apple 的官方文档说明中，在 iOS 9.0，macOS 10.11 及以后的系统版本中">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2016-10-11T06:16:03.000Z">
+<meta property="article:modified_time" content="2023-06-13T02:42:40.515Z">
+<meta property="article:author" content="Alexius">
+<meta property="article:tag" content="Notification">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+          
+              <link rel="shortcut icon" href="/images/favicon.ico">
+          
+        
+        
+          
+            <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+          
+        
+        
+          
+            <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+          
+        
+    
+    <!-- title -->
+    <title>关于 Notification 的使用</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2016/11/02/%E8%B4%9D%E5%A1%9E%E5%B0%94%E6%9B%B2%E7%BA%BF%E5%8A%A8%E7%94%BB%E9%97%AE%E9%A2%98/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&text=关于 Notification 的使用"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&title=关于 Notification 的使用"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&is_video=false&description=关于 Notification 的使用"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=关于 Notification 的使用&body=Check out this article: http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&title=关于 Notification 的使用"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&title=关于 Notification 的使用"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&title=关于 Notification 的使用"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&title=关于 Notification 的使用"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&name=关于 Notification 的使用&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&t=关于 Notification 的使用"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#0x00-%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">0x00 前言</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#0x01-removeObserver"><span class="toc-number">2.</span> <span class="toc-text">0x01 removeObserver?</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#0x02-%E9%80%9A%E7%9F%A5%E7%9A%84-block-%E5%BD%A2%E5%BC%8F%E4%B8%8E-weak"><span class="toc-number">3.</span> <span class="toc-text">0x02 通知的 block 形式与 weak</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#0x03-%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">0x03 总结</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        关于 Notification 的使用
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Alexius's Utopia</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2016-10-11T06:16:03.000Z" itemprop="datePublished">2016-10-11</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/categories/iOS/">iOS</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/Notification/" rel="tag">Notification</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h3 id="0x00-前言"><a href="#0x00-前言" class="headerlink" title="0x00 前言"></a>0x00 前言</h3><p>一直以来，对于 <code>Notification</code> 的使用都理解得不是特别透彻，<code>dealloc</code> 中要不要移除 <code>observer</code>，<code>block</code> 中要不要加 <code>weak</code>，一直都是能加就加，根本未考虑过为什么要加或者说为什么可以不加。这篇记录就将这些问题一次性地弄个明白。</p>
+<h3 id="0x01-removeObserver"><a href="#0x01-removeObserver" class="headerlink" title="0x01 removeObserver?"></a>0x01 removeObserver?</h3><p>Apple 的官方文档说明中，在 iOS 9.0，macOS 10.11 及以后的系统版本中，使用 <code>addObserver:selector:name:object:</code> 方式添加的通知可以不再手动移除通知。而使用 <code> addObserverForName:object:queue:usingBlock:</code> 方式添加的通知在之前是需要手动移除的，而在新版本中则没有特意指明是否需要移除。</p>
+<p>那么我们就用代码来实际测试一下。</p>
+<p>首先，我们为 <code>NotificationCenter</code> 添加一个扩展方法，用自定义的方法对 <code>removeObserver</code> 进行交换，并在自定义方法中输出我们想要的信息。这样就能够在退出界面时在控制台方便地看到 <code>Notification</code> 到底有没有移除 <code>observer</code>。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extension</span> <span class="title class_">NotificationCenter</span> &#123;</span><br><span class="line">    <span class="keyword">class</span> <span class="title class_">func</span> <span class="title class_">swizzling</span>() &#123;</span><br><span class="line">        <span class="keyword">let</span> selector <span class="operator">=</span> <span class="keyword">#selector</span>(<span class="type">NotificationCenter</span>.removeObserver(<span class="keyword">_</span>:))</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">let</span> method <span class="operator">=</span> class_getInstanceMethod(<span class="keyword">self</span>, selector)<span class="operator">!</span></span><br><span class="line">        <span class="keyword">let</span> newmethod <span class="operator">=</span> class_getInstanceMethod(<span class="keyword">self</span>, <span class="keyword">#selector</span>(my_removeObserver(<span class="keyword">_</span>:)))</span><br><span class="line">        </span><br><span class="line">        method_exchangeImplementations(method, newmethod<span class="operator">!</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">@objc</span> <span class="keyword">func</span> <span class="title function_">my_removeObserver</span>(<span class="keyword">_</span> <span class="params">noti</span>: <span class="keyword">Any</span><span class="operator">?</span>) &#123;</span><br><span class="line">        <span class="keyword">self</span>.my_removeObserver(noti)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;Observer has been removed&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>接下来我们创建三个界面，分别为 <code>FirstController</code>、<code>SecondController</code> 和 <code>ThirdController</code>。</p>
+<p>在 <code>FirstController</code> 的 <code>viewDidLoad</code> 方法中调用 <code>NotificationCenter.swizzling()</code>。</p>
+<p>在 <code>SecondController</code> 中添加接收通知的代码：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">NotificationCenter</span>.default.addObserver(<span class="keyword">self</span>, selector: <span class="keyword">#selector</span>(notificationReceived), name: .<span class="keyword">init</span>(<span class="string">&quot;TestNotification&quot;</span>), object: <span class="literal">nil</span>)</span><br><span class="line"></span><br><span class="line"><span class="operator">...</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">@objc</span> <span class="keyword">private</span> <span class="keyword">func</span> <span class="title function_">notificationReceived</span>(<span class="keyword">_</span> <span class="params">noti</span>: <span class="type">Notification</span>) &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Has received notifciation by selector.&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后在 <code>ThirdController</code> 的 <code>viewDidLoad</code> 方法中发送通知：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">NotificationCenter</span>.default.post(name: .<span class="keyword">init</span>(rawValue: <span class="string">&quot;TestNotification&quot;</span>), object: <span class="literal">nil</span>)</span><br></pre></td></tr></table></figure>
+
+<p>此时便已万事俱备了，接下来开始我们的测试。</p>
+<p>运行我们的 demo app，首先进入 <code>FirstController</code>，然后 present 出 <code>SecondController</code>，在第二个界面再次 present 出 <code>ThirdController</code>。</p>
+<p>此时， <code>ThirdController</code> 中的通知消息已经发出，控制台也能看到输出了 “Has received notifciation by selector.”，此时将 <code>ThirdController</code> 关闭，控制台再次打印出 “Observer has been removed”。这说明 <code>ThirdController</code> 关闭的时候自动调用了 <code>removeObserver</code> 方法。<br>再将 <code>SecondController</code> 关闭，控制台同样打印出 “Observer has been removed”，这说明的确不用再手动移除通知的 <code>observer</code> 了。</p>
+<h3 id="0x02-通知的-block-形式与-weak"><a href="#0x02-通知的-block-形式与-weak" class="headerlink" title="0x02 通知的 block 形式与 weak"></a>0x02 通知的 block 形式与 weak</h3><p>将 <code>SecondController</code> 中的接收通知代码替换为 block 形式：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">NotificationCenter</span>.default.addObserver(forName: .<span class="keyword">init</span>(<span class="string">&quot;TestNotification&quot;</span>), object: <span class="literal">nil</span>, queue: .main) &#123; (noti) <span class="keyword">in</span></span><br><span class="line">    <span class="keyword">self</span>.notificationCallback(noti)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="operator">...</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">func</span> <span class="title function_">notificationCallback</span>(<span class="keyword">_</span> <span class="params">noti</span>: <span class="type">Notification</span>) &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Has received notification by block.&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再以相同的流程跑一遍，可以发现关闭 <code>SecondController</code> 并没有打印 “Observer has been removed”，是因为 <code>block</code> 形式的通知不支持自动移除吗？我们在 <code>deinit</code> 中手动移除一下再来看看。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">deinit</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Second view controller deinited.&quot;</span>)</span><br><span class="line">    <span class="type">NotificationCenter</span>.default.removeObserver(<span class="keyword">self</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再试一下，可以发现 <code>deinit</code> 方法根本没有调用，所以，根本原因其实是产生了循环引用导致不能正常释放。因此在 <code>block</code> 中添加weak，修改后的代码为：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">NotificationCenter</span>.default.addObserver(forName: .<span class="keyword">init</span>(<span class="string">&quot;TestNotification&quot;</span>), object: <span class="literal">nil</span>, queue: .main) &#123; [<span class="keyword">weak</span> <span class="keyword">self</span>] (noti) <span class="keyword">in</span></span><br><span class="line">    <span class="keyword">self</span><span class="operator">?</span>.notificationCallback(noti)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="operator">...</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">deinit</span> &#123;</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Second view controller deinited.&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再运行一遍我们的demo，可以看到控制台输出了 “Observer has been removed” 和 “Second view controller deinited.” 这两句话，证明了 <code>observer</code> 已正常移除，<code>SecondController</code> 也已正常释放。</p>
+<h3 id="0x03-总结"><a href="#0x03-总结" class="headerlink" title="0x03 总结"></a>0x03 总结</h3><p>通过以上的测试，可以得出结论，在iOS 9.0，macOS 10.11 及以后的版本中，<code>NotificationCenter</code> 的 <code>observer</code> 不再需要手动移除，使用 <code>block</code> 形式的通知时，需要加上 <code>weak</code> 以避免循环引用的出现。</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#0x00-%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">0x00 前言</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#0x01-removeObserver"><span class="toc-number">2.</span> <span class="toc-text">0x01 removeObserver?</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#0x02-%E9%80%9A%E7%9F%A5%E7%9A%84-block-%E5%BD%A2%E5%BC%8F%E4%B8%8E-weak"><span class="toc-number">3.</span> <span class="toc-text">0x02 通知的 block 形式与 weak</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#0x03-%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">0x03 总结</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&text=关于 Notification 的使用"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&title=关于 Notification 的使用"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&is_video=false&description=关于 Notification 的使用"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=关于 Notification 的使用&body=Check out this article: http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&title=关于 Notification 的使用"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&title=关于 Notification 的使用"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&title=关于 Notification 的使用"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&title=关于 Notification 的使用"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&name=关于 Notification 的使用&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2016/10/11/%E5%85%B3%E4%BA%8E%20Notification%20%E7%9A%84%E4%BD%BF%E7%94%A8/&t=关于 Notification 的使用"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2014-2023
+    Alexius
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+  <script async src="https://busuanzi.icodeq.com/busuanzi.pure.mini.js"></script>
+
+  <div>
+    本文总阅读量 <span id="busuanzi_value_page_pv"></span> 次
+    本站总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    本站总访客数 <span id="busuanzi_value_site_uv"></span> 人
+  </div>
+
+</footer>
+
+
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Disqus Comments -->
+
+
+</body>
+</html>

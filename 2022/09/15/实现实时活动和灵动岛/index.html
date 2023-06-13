@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="1 概览实时活动是在 iOS 16.1 上面推出的新 API，用于在锁屏和灵动岛上显示最新数据。为了实现实时活动，需要在小部件实现。实时活动使用 WidgetKit 和 SwiftUI 来构建用户界面，而 ActivityKit 则用于处理实时活动的生命周期——请求、更新、和结束。 2 实时活动的要求和限制实时活动最多能保持 8 小时，超过时系统会自动结束。当实时活动结束时，会从灵动岛上移除，但是">
+<meta property="og:type" content="article">
+<meta property="og:title" content="实现实时活动和灵动岛">
+<meta property="og:url" content="http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/index.html">
+<meta property="og:site_name" content="Alexius&#39;s Utopia">
+<meta property="og:description" content="1 概览实时活动是在 iOS 16.1 上面推出的新 API，用于在锁屏和灵动岛上显示最新数据。为了实现实时活动，需要在小部件实现。实时活动使用 WidgetKit 和 SwiftUI 来构建用户界面，而 ActivityKit 则用于处理实时活动的生命周期——请求、更新、和结束。 2 实时活动的要求和限制实时活动最多能保持 8 小时，超过时系统会自动结束。当实时活动结束时，会从灵动岛上移除，但是">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://docs-assets.developer.apple.com/published/e7011a56e8cf175d1f6aba25a417c19a/live-activity-leading-trailing~dark@2x.png">
+<meta property="og:image" content="https://docs-assets.developer.apple.com/published/0ac0cab042731faf4f7e9df18ac47283/live-activity-leading-expanded~dark@2x.png">
+<meta property="article:published_time" content="2022-09-15T06:16:03.000Z">
+<meta property="article:modified_time" content="2023-06-13T02:42:40.515Z">
+<meta property="article:author" content="Alexius">
+<meta property="article:tag" content="实时活动">
+<meta property="article:tag" content="灵动岛">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://docs-assets.developer.apple.com/published/e7011a56e8cf175d1f6aba25a417c19a/live-activity-leading-trailing~dark@2x.png">
+    
+    
+        
+          
+              <link rel="shortcut icon" href="/images/favicon.ico">
+          
+        
+        
+          
+            <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+          
+        
+        
+          
+            <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+          
+        
+    
+    <!-- title -->
+    <title>实现实时活动和灵动岛</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2023/05/03/Xcode-14-3%E6%89%93%E5%8C%85%E5%A4%B1%E8%B4%A5%E9%97%AE%E9%A2%98/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&text=实现实时活动和灵动岛"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&title=实现实时活动和灵动岛"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&is_video=false&description=实现实时活动和灵动岛"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=实现实时活动和灵动岛&body=Check out this article: http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&title=实现实时活动和灵动岛"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&title=实现实时活动和灵动岛"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&title=实现实时活动和灵动岛"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&title=实现实时活动和灵动岛"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&name=实现实时活动和灵动岛&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&t=实现实时活动和灵动岛"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E6%A6%82%E8%A7%88"><span class="toc-number">1.</span> <span class="toc-text">1 概览</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E7%9A%84%E8%A6%81%E6%B1%82%E5%92%8C%E9%99%90%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">2 实时活动的要求和限制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E4%B8%BA%E5%BA%94%E7%94%A8%E6%B7%BB%E5%8A%A0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E6%94%AF%E6%8C%81"><span class="toc-number">3.</span> <span class="toc-text">3 为应用添加实时活动支持</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#3-1-%E5%AE%9A%E4%B9%89%E6%B4%BB%E5%8A%A8%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="toc-number">3.1.</span> <span class="toc-text">3.1 定义活动数据类型</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-2-%E5%88%9B%E5%BB%BA%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E7%9A%84%E8%A7%86%E5%9B%BE"><span class="toc-number">3.2.</span> <span class="toc-text">3.2 创建实时活动的视图</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E7%9A%84%E5%88%9B%E5%BB%BA%E3%80%81%E6%9B%B4%E6%96%B0%E4%B8%8E%E7%BB%93%E6%9D%9F"><span class="toc-number">4.</span> <span class="toc-text">4. 实时活动的创建、更新与结束</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#4-1-%E5%88%9B%E5%BB%BA"><span class="toc-number">4.1.</span> <span class="toc-text">4.1 创建</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-2-%E6%9B%B4%E6%96%B0"><span class="toc-number">4.2.</span> <span class="toc-text">4.2 更新</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-3-%E7%BB%93%E6%9D%9F"><span class="toc-number">4.3.</span> <span class="toc-text">4.3 结束</span></a></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        实现实时活动和灵动岛
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Alexius's Utopia</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-09-15T06:16:03.000Z" itemprop="datePublished">2022-09-15</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/categories/iOS/">iOS</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8/" rel="tag">实时活动</a>, <a class="tag-link-link" href="/tags/%E7%81%B5%E5%8A%A8%E5%B2%9B/" rel="tag">灵动岛</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h3 id="1-概览"><a href="#1-概览" class="headerlink" title="1 概览"></a>1 概览</h3><p>实时活动是在 iOS 16.1 上面推出的新 API，用于在锁屏和灵动岛上显示最新数据。为了实现实时活动，需要在小部件实现。实时活动使用 WidgetKit 和 SwiftUI 来构建用户界面，而 ActivityKit 则用于处理实时活动的生命周期——请求、更新、和结束。</p>
+<h3 id="2-实时活动的要求和限制"><a href="#2-实时活动的要求和限制" class="headerlink" title="2 实时活动的要求和限制"></a>2 实时活动的要求和限制</h3><p>实时活动最多能保持 8 小时，超过时系统会自动结束。当实时活动结束时，会从灵动岛上移除，但是会留在锁屏上最多 4 小时。因此理论上来说，实时活动可以在锁屏上最多保留 12 小时。<br>实时活动运行在独立的沙盒中，不能像小部件一样访问网络或者接收定位更新。所以只能在应用中使用 ActivityKit 或者远程推送通知来刷新活动的数据。</p>
+<blockquote>
+<p><strong>注意</strong><br>不论使用何种方式更新，其数据的大小不能超过 4KB。</p>
+</blockquote>
+<h3 id="3-为应用添加实时活动支持"><a href="#3-为应用添加实时活动支持" class="headerlink" title="3 为应用添加实时活动支持"></a>3 为应用添加实时活动支持</h3><p>添加实时活动只需要如下几步：</p>
+<ol>
+<li>创建小组件，如果应用中已存在小组件，略过。</li>
+<li>在主应用的 Info.plist 文件中添加实时活动的支持，设置Supports Live Activities 为 YES。</li>
+<li>添加 ActivityAttributes 来描述实时活动的数据。</li>
+<li>使用 ActivityAttributes 创建 ActivityConfiguration。</li>
+<li>实现实时活动的启动、更新和结束的功能。</li>
+</ol>
+<p>此处略过1、2步。</p>
+<h4 id="3-1-定义活动数据类型"><a href="#3-1-定义活动数据类型" class="headerlink" title="3.1 定义活动数据类型"></a>3.1 定义活动数据类型</h4><figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">FitnessAttributes</span>: <span class="title class_">ActivityAttributes</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">typealias</span> <span class="type">ContentState</span> <span class="operator">=</span> <span class="type">FitnessState</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">struct</span> <span class="title class_">FitnessState</span>: <span class="title class_">Codable</span>, <span class="title class_">Hashable</span> &#123;</span><br><span class="line">        <span class="keyword">var</span> item: <span class="type">String</span></span><br><span class="line">        <span class="keyword">var</span> time: <span class="type">ClosedRange</span>&lt;<span class="type">Date</span>&gt;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> username: <span class="type">String</span></span><br><span class="line">    <span class="keyword">var</span> fitnessGoal: <span class="type">String</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面代码定义了一个健身的实时活动 attributes。其中，FitnessAttributes 中定义的为静态数据类型，而 FitnessState 中所定义的则为动态数据类型。</p>
+<h4 id="3-2-创建实时活动的视图"><a href="#3-2-创建实时活动的视图" class="headerlink" title="3.2 创建实时活动的视图"></a>3.2 创建实时活动的视图</h4><p>有了实时活动所需的数据类型，接下来就是在灵动岛和锁屏上将其显示出来。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">FitnessWidget</span>: <span class="title class_">Widget</span> &#123;</span><br><span class="line">    <span class="keyword">var</span> body: <span class="keyword">some</span> <span class="type">WidgetConfiguration</span> &#123;</span><br><span class="line">        <span class="type">ActivityConfiguration</span>(for: <span class="type">FitnessAttributes</span>.<span class="keyword">self</span>) &#123; context <span class="keyword">in</span></span><br><span class="line">            <span class="type">FitnessLockScreenView</span>(context: context)</span><br><span class="line">        &#125; dynamicIsland: &#123; context <span class="keyword">in</span></span><br><span class="line">            <span class="type">DynamicIsland</span> &#123;</span><br><span class="line">                <span class="type">DynamicIslandExpandedRegion</span>(.center) &#123;</span><br><span class="line">                    <span class="type">Text</span>(context.attributes.username <span class="operator">+</span> <span class="string">&quot;正在&quot;</span> <span class="operator">+</span> context.state.item <span class="operator">+</span> <span class="string">&quot;！&quot;</span>)</span><br><span class="line">                    <span class="type">Label</span> &#123;</span><br><span class="line">                        <span class="type">Text</span>(timerInterval: context.state.time, countsDown: <span class="literal">true</span>)</span><br><span class="line">                    &#125; icon: &#123;</span><br><span class="line">                        <span class="type">Image</span>(systemName: <span class="string">&quot;timer&quot;</span>)</span><br><span class="line">                    &#125;</span><br><span class="line">                    .font(.title2)</span><br><span class="line">                    .foregroundColor(.orange)</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; compactLeading: &#123;</span><br><span class="line">                <span class="type">CompactLeadingView</span>(context: context)</span><br><span class="line">            &#125; compactTrailing: &#123;</span><br><span class="line">                <span class="type">CompactTrailingView</span>(context: context)</span><br><span class="line">            &#125; minimal: &#123;</span><br><span class="line">                <span class="type">Image</span>(systemName: <span class="string">&quot;figure.step.training&quot;</span>)</span><br><span class="line">                    .foregroundColor(.white)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接下来就来看看以上代码具体是什么意思。</p>
+<p>首先是构造一个实时活动的配置并返回，这个方法的签名如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">init</span>&lt;<span class="type">Content</span>&gt;(<span class="params">for</span> <span class="params">attributesType</span>: <span class="type">Attributes</span>.<span class="keyword">Type</span> <span class="operator">=</span> <span class="type">Attributes</span>.<span class="keyword">self</span>, <span class="meta">@ViewBuilder</span> <span class="params">content</span>: <span class="keyword">@escaping</span> (<span class="type">ActivityViewContext</span>&lt;<span class="type">Attributes</span>&gt;) -&gt; <span class="type">Content</span>, <span class="params">dynamicIsland</span>: <span class="keyword">@escaping</span> (<span class="type">ActivityViewContext</span>&lt;<span class="type">Attributes</span>&gt;) -&gt; <span class="type">DynamicIsland</span>) <span class="keyword">where</span> <span class="type">Content</span> : <span class="type">View</span></span><br></pre></td></tr></table></figure>
+<p>方法签名虽然看起来很长，但实际上只有三个参数，第一个是支持的实时活动的数据类型，也就是前文定义的 ActivityAttributes。第二个参数是个闭包，用于构建锁屏状态下的实时活动视图。第三个参数同样是个闭包，用于构建灵动岛的视图。</p>
+<p>前面两个参数都比较简单，一看就会用，这里主要讲一讲灵动岛的实现。</p>
+<p>灵动岛由 DynamicIsland 进行初始化，看一下初始化的方法签名：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">init</span>&lt;<span class="type">Expanded</span>, <span class="type">CompactLeading</span>, <span class="type">CompactTrailing</span>, <span class="type">Minimal</span>&gt;(<span class="meta">@DynamicIslandExpandedContentBuilder</span> <span class="params">expanded</span>: <span class="keyword">@escaping</span> () -&gt; <span class="type">Expanded</span>, <span class="meta">@ViewBuilder</span> <span class="params">compactLeading</span>: <span class="keyword">@escaping</span> () -&gt; <span class="type">CompactLeading</span>, <span class="meta">@ViewBuilder</span> <span class="params">compactTrailing</span>: <span class="keyword">@escaping</span> () -&gt; <span class="type">CompactTrailing</span>, <span class="meta">@ViewBuilder</span> <span class="params">minimal</span>: <span class="keyword">@escaping</span> () -&gt; <span class="type">Minimal</span>) <span class="keyword">where</span> <span class="type">Expanded</span> : <span class="type">DynamicIslandExpandedContent</span>, <span class="type">CompactLeading</span> : <span class="type">View</span>, <span class="type">CompactTrailing</span> : <span class="type">View</span>, <span class="type">Minimal</span> : <span class="type">View</span></span><br></pre></td></tr></table></figure>
+<p>一共有四个闭包，分别是：</p>
+<ul>
+<li>Expanded，代表了灵动岛展开时的视图；</li>
+<li>CompactLeading，代表摄像头之前的视图；</li>
+<li>CompactTrailing，代表摄像头之后的视图；</li>
+<li>Minimal，存在多个实时活动时的视图；</li>
+</ul>
+<p>后三个都是常见的 SwiftUI 视图，Expanded 中需要根据对应的区域来构建不同的视图。<br>如开发者官网文档的图片所示：<br><img src="https://docs-assets.developer.apple.com/published/e7011a56e8cf175d1f6aba25a417c19a/live-activity-leading-trailing~dark@2x.png" alt="灵动岛显示区域划分"></p>
+<p>展开的视图分为四个区域，分别为 leading、trailing、center 和 bottom。所以在构建视图的时候根据需要显示的内容设置不同的视图：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">DynamicIslandExpandedRegion</span>(.center) &#123;</span><br><span class="line">	<span class="type">Text</span>(context.attributes.username <span class="operator">+</span> <span class="string">&quot;正在&quot;</span> <span class="operator">+</span> context.state.item <span class="operator">+</span> <span class="string">&quot;！&quot;</span>)</span><br><span class="line">	<span class="type">Label</span> &#123;</span><br><span class="line">		<span class="type">Text</span>(timerInterval: context.state.time, countsDown: <span class="literal">true</span>)</span><br><span class="line">	&#125; icon: &#123;</span><br><span class="line">		<span class="type">Image</span>(systemName: <span class="string">&quot;timer&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	.font(.title2)</span><br><span class="line">	.foregroundColor(.orange)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述代码实现了灵动岛展开情况下中间部分的视图，其余几个部分都大同小异。另外需要说明的是，当左右两边的空间不够时，可以使用 <code>belowIfTooWide</code> 修饰符将其内容显示在摄像头下方，但是这一条在实际使用时并没有生效，不知是使用方式的问题还是苹果的bug。</p>
+<p>同样借用官网的图来表示左右两边的视图可以占据的最大空间。<br><img src="https://docs-assets.developer.apple.com/published/0ac0cab042731faf4f7e9df18ac47283/live-activity-leading-expanded~dark@2x.png" alt="灵动岛优先级展示"></p>
+<h3 id="4-实时活动的创建、更新与结束"><a href="#4-实时活动的创建、更新与结束" class="headerlink" title="4. 实时活动的创建、更新与结束"></a>4. 实时活动的创建、更新与结束</h3><h4 id="4-1-创建"><a href="#4-1-创建" class="headerlink" title="4.1 创建"></a>4.1 创建</h4><p>为了创建实时活动，首先需要创建实时活动所需要的数据，注意，动态数据和静态数据要分别创建。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> future <span class="operator">=</span> <span class="type">Calendar</span>.current.date(byAdding: .minute, value: <span class="number">20</span>, to: <span class="type">Date</span>())<span class="operator">!</span></span><br><span class="line"><span class="keyword">let</span> date <span class="operator">=</span> <span class="type">Date</span>.now<span class="operator">...</span>future</span><br><span class="line"><span class="keyword">let</span> fitnessAttributes <span class="operator">=</span> <span class="type">FitnessAttributes</span>(username: <span class="string">&quot;Ludwig&quot;</span>, fitnessGoal: <span class="string">&quot;早日回到BMI正常区间。&quot;</span>)</span><br><span class="line"><span class="keyword">let</span> fitnessState <span class="operator">=</span> <span class="type">FitnessAttributes</span>.<span class="type">FitnessState</span>(item: <span class="string">&quot;跑步&quot;</span>, time: date)</span><br></pre></td></tr></table></figure>
+<p>然后使用 Activity 类就可以轻松地创建实时活动了。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">	<span class="keyword">let</span> fitnessActivity <span class="operator">=</span> <span class="keyword">try</span> <span class="type">Activity</span>.request(attributes: fitnessAttributes, contentState: fitnessState)</span><br><span class="line">	<span class="built_in">print</span>(<span class="string">&quot;Created a fitness activity <span class="subst">\(String(describing: fitnessActivity<span class="operator">?</span>.id))</span>.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">	<span class="built_in">print</span>(error.localizedDescription)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="4-2-更新"><a href="#4-2-更新" class="headerlink" title="4.2 更新"></a>4.2 更新</h4><p>更新则只需要创建一个新的动态数据，然后将其设置到实时活动就行了。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> future <span class="operator">=</span> <span class="type">Calendar</span>.current.date(byAdding: .minute, value: <span class="number">10</span>, to: <span class="type">Date</span>())<span class="operator">!</span></span><br><span class="line"><span class="keyword">let</span> date <span class="operator">=</span> <span class="type">Date</span>.now<span class="operator">...</span>future</span><br><span class="line"><span class="keyword">let</span> fitnessState <span class="operator">=</span> <span class="type">FitnessAttributes</span>.<span class="type">FitnessState</span>(item: <span class="string">&quot;跑步&quot;</span>, time: date)</span><br><span class="line"><span class="keyword">let</span> alertConfiguration <span class="operator">=</span> <span class="type">AlertConfiguration</span>(title: <span class="string">&quot;Fitness update&quot;</span>, body: <span class="string">&quot;10 minutes left&quot;</span>, sound: .default)</span><br><span class="line"></span><br><span class="line"><span class="keyword">await</span> fitnessActivity<span class="operator">?</span>.update(using: fitnessState, alertConfiguration: alertConfiguration)</span><br></pre></td></tr></table></figure>
+<p>需要注意的是，更新的同时，还会有一个提示，提示的声音既可以使用默认的，也可以自定义。</p>
+<p>在后台更新可以参考使用 [[BackgroundTasks 实践#^a71227|BackgroundTasks]] 来做。</p>
+<h4 id="4-3-结束"><a href="#4-3-结束" class="headerlink" title="4.3 结束"></a>4.3 结束</h4><p>结束就更简单了，需要传递两个参数。<br>第一个参数是动态数据，也就是实时活动结束时你想让它处于什么样的状态，那么这里就设置成什么样的数据。<br>第二个参数是结束时的策略，有三种可选：</p>
+<ol>
+<li>default，如果用户不手动清除屏幕上的实时活动，则系统会在四小时后自动清除；</li>
+<li>immediate，就是在活动结束时马上清除实时活动；</li>
+<li>after，需要提供一个日期，在这个时间到来时清除实时活动，此日期不能超过现在的四小时，超过的话，以四小时计。<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">await</span> fitnessActivity<span class="operator">?</span>.end(using: fitnessState, dismissalPolicy: .default)</span><br></pre></td></tr></table></figure></li>
+</ol>
+<blockquote>
+<p><strong>注意</strong><br>需要注意的是，更新和结束都可以在后台执行，具体执行的方法参考 <code>Background Task</code> 。</p>
+</blockquote>
+<p>以上就是关于实时活动和灵动岛的全部内容了，后面再写利用远程通知来更新或结束实时活动的内容。</p>
+<blockquote>
+<p><strong>参考文章</strong><br><a target="_blank" rel="noopener" href="https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities">官网文档</a></p>
+</blockquote>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E6%A6%82%E8%A7%88"><span class="toc-number">1.</span> <span class="toc-text">1 概览</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E7%9A%84%E8%A6%81%E6%B1%82%E5%92%8C%E9%99%90%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">2 实时活动的要求和限制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E4%B8%BA%E5%BA%94%E7%94%A8%E6%B7%BB%E5%8A%A0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E6%94%AF%E6%8C%81"><span class="toc-number">3.</span> <span class="toc-text">3 为应用添加实时活动支持</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#3-1-%E5%AE%9A%E4%B9%89%E6%B4%BB%E5%8A%A8%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="toc-number">3.1.</span> <span class="toc-text">3.1 定义活动数据类型</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-2-%E5%88%9B%E5%BB%BA%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E7%9A%84%E8%A7%86%E5%9B%BE"><span class="toc-number">3.2.</span> <span class="toc-text">3.2 创建实时活动的视图</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E7%9A%84%E5%88%9B%E5%BB%BA%E3%80%81%E6%9B%B4%E6%96%B0%E4%B8%8E%E7%BB%93%E6%9D%9F"><span class="toc-number">4.</span> <span class="toc-text">4. 实时活动的创建、更新与结束</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#4-1-%E5%88%9B%E5%BB%BA"><span class="toc-number">4.1.</span> <span class="toc-text">4.1 创建</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-2-%E6%9B%B4%E6%96%B0"><span class="toc-number">4.2.</span> <span class="toc-text">4.2 更新</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-3-%E7%BB%93%E6%9D%9F"><span class="toc-number">4.3.</span> <span class="toc-text">4.3 结束</span></a></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&text=实现实时活动和灵动岛"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&title=实现实时活动和灵动岛"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&is_video=false&description=实现实时活动和灵动岛"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=实现实时活动和灵动岛&body=Check out this article: http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&title=实现实时活动和灵动岛"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&title=实现实时活动和灵动岛"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&title=实现实时活动和灵动岛"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&title=实现实时活动和灵动岛"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&name=实现实时活动和灵动岛&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/&t=实现实时活动和灵动岛"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2014-2023
+    Alexius
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+  <script async src="https://busuanzi.icodeq.com/busuanzi.pure.mini.js"></script>
+
+  <div>
+    本文总阅读量 <span id="busuanzi_value_page_pv"></span> 次
+    本站总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    本站总访客数 <span id="busuanzi_value_site_uv"></span> 人
+  </div>
+
+</footer>
+
+
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Disqus Comments -->
+
+
+</body>
+</html>

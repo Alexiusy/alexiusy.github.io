@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="公司的一个项目中的所有 API 接口无论是否登录都要带一个 token，如果没有 token 的话请求就会失败，因此在没有 token 或者是 token 失效的情况下要调用获取 token 的 API 将获取到的 token 存储到本地。 多次调用接口写完代码后一测试，后台发现用户数量呈不正常的状态在增长，一查，发现每请求一次 token 都会生成一个用户。那么只能限制获取 token 的接口的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Moya 在用户 token 失效情况下的请求重试">
+<meta property="og:url" content="http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/index.html">
+<meta property="og:site_name" content="Alexius&#39;s Utopia">
+<meta property="og:description" content="公司的一个项目中的所有 API 接口无论是否登录都要带一个 token，如果没有 token 的话请求就会失败，因此在没有 token 或者是 token 失效的情况下要调用获取 token 的 API 将获取到的 token 存储到本地。 多次调用接口写完代码后一测试，后台发现用户数量呈不正常的状态在增长，一查，发现每请求一次 token 都会生成一个用户。那么只能限制获取 token 的接口的">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-03-17T13:23:56.000Z">
+<meta property="article:modified_time" content="2023-06-13T02:42:40.511Z">
+<meta property="article:author" content="Alexius">
+<meta property="article:tag" content="Moya">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+          
+              <link rel="shortcut icon" href="/images/favicon.ico">
+          
+        
+        
+          
+            <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+          
+        
+        
+          
+            <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+          
+        
+    
+    <!-- title -->
+    <title>Moya 在用户 token 失效情况下的请求重试</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2022/09/15/%E5%AE%9E%E7%8E%B0%E5%AE%9E%E6%97%B6%E6%B4%BB%E5%8A%A8%E5%92%8C%E7%81%B5%E5%8A%A8%E5%B2%9B/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2021/12/17/UILabel%E8%B6%85%E8%BF%87%E6%8C%87%E5%AE%9A%E8%A1%8C%E6%95%B0%E6%97%B6%E6%98%BE%E7%A4%BA%E6%9B%B4%E5%A4%9A/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&text=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&title=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&is_video=false&description=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Moya 在用户 token 失效情况下的请求重试&body=Check out this article: http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&title=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&title=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&title=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&title=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&name=Moya 在用户 token 失效情况下的请求重试&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&t=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%9A%E6%AC%A1%E8%B0%83%E7%94%A8%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.</span> <span class="toc-text">多次调用接口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Moya-%E9%87%8D%E8%AF%95%E8%AF%B7%E6%B1%82"><span class="toc-number">2.</span> <span class="toc-text">Moya 重试请求</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Moya 在用户 token 失效情况下的请求重试
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Alexius's Utopia</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-03-17T13:23:56.000Z" itemprop="datePublished">2022-03-17</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/categories/iOS/">iOS</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/Moya/" rel="tag">Moya</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>公司的一个项目中的所有 API 接口无论是否登录都要带一个 token，如果没有 token 的话请求就会失败，因此在没有 token 或者是 token 失效的情况下要调用获取 token 的 API 将获取到的 token 存储到本地。</p>
+<h3 id="多次调用接口"><a href="#多次调用接口" class="headerlink" title="多次调用接口"></a>多次调用接口</h3><p>写完代码后一测试，后台发现用户数量呈不正常的状态在增长，一查，发现每请求一次 token 都会生成一个用户。那么只能限制获取 token 的接口的调用次数了，一旦获取到 token，后续请求 token 的接口都取消。很自然地就想到用 OperationQueue 来做这个事情。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">let</span> operationQueue: <span class="type">OperationQueue</span> <span class="operator">=</span> &#123;</span><br><span class="line">	<span class="keyword">let</span> queue <span class="operator">=</span> <span class="type">OperationQueue</span>()</span><br><span class="line">	queue.maxConcurrentOperationCount <span class="operator">=</span> <span class="number">1</span></span><br><span class="line">	<span class="keyword">return</span> queue</span><br><span class="line">&#125;()</span><br><span class="line">	</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">let</span> group <span class="operator">=</span> <span class="type">DispatchGroup</span>()</span><br><span class="line">	</span><br><span class="line"><span class="keyword">func</span> <span class="title function_">getAccesstoken</span>() &#123;</span><br><span class="line">	operationQueue.addOperation &#123; [<span class="keyword">weak</span> <span class="keyword">self</span>] <span class="keyword">in</span></span><br><span class="line">		<span class="keyword">guard</span> <span class="keyword">let</span> this <span class="operator">=</span> <span class="keyword">self</span> <span class="keyword">else</span> &#123; <span class="keyword">return</span> &#125;</span><br><span class="line">		this.getToken()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">func</span> <span class="title function_">getToken</span>() &#123;</span><br><span class="line">	<span class="keyword">func</span> <span class="title function_">handleResult</span>(<span class="keyword">_</span> <span class="params">item</span>: <span class="type">String</span>) &#123;</span><br><span class="line">		<span class="comment">// 取消排队等候的所有请求</span></span><br><span class="line">		operationQueue.cancelAllOperations()</span><br><span class="line">		group.leave()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">func</span> <span class="title function_">handleError</span>(<span class="keyword">_</span> <span class="params">error</span>: <span class="type">Error</span>) -&gt; <span class="type">Void</span> &#123;</span><br><span class="line">		group.leave()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	group.enter()</span><br><span class="line"></span><br><span class="line">	webService.getToken()</span><br><span class="line">		.done(handleResult)</span><br><span class="line">		.catch(handleError)</span><br><span class="line">		</span><br><span class="line">	group.wait()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样就解决了多次调用获取 token 请求的问题。</p>
+<h3 id="Moya-重试请求"><a href="#Moya-重试请求" class="headerlink" title="Moya 重试请求"></a>Moya 重试请求</h3><p>在 token 失效之后还得解决一个问题，那就是由于 token 失效导致的请求失败的问题，得让失败的请求进行重试，由于用的是 Moya 框架，搜索了许多重试的解决方案，无奈的是试过之后都不起作用，最后只能自己子类化一个 provider 来实现重试的功能。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">CustomProvider</span>&lt;<span class="title class_">T</span>: <span class="title class_">TargetType</span>&gt;: <span class="title class_">MoyaProvider</span>&lt;<span class="title class_">T</span>&gt; &#123;</span><br><span class="line">    <span class="keyword">@discardableResult</span></span><br><span class="line">    <span class="keyword">override</span> <span class="keyword">func</span> <span class="title function_">request</span>(<span class="keyword">_</span> <span class="params">target</span>: <span class="type">T</span>, <span class="params">callbackQueue</span>: <span class="type">DispatchQueue</span>? <span class="operator">=</span> .none, <span class="params">progress</span>: <span class="type">ProgressBlock</span>? <span class="operator">=</span> .none, <span class="params">completion</span>: <span class="keyword">@escaping</span> <span class="type">Completion</span>) -&gt; <span class="type">Cancellable</span> &#123;</span><br><span class="line">        <span class="keyword">super</span>.request(target, callbackQueue: callbackQueue, progress: progress) &#123; result <span class="keyword">in</span></span><br><span class="line">            <span class="keyword">switch</span> result &#123;</span><br><span class="line">            <span class="keyword">case</span> .success(<span class="keyword">let</span> response):</span><br><span class="line">                <span class="comment">// 获取 token 失效时的业务状态码</span></span><br><span class="line">                <span class="operator">...</span></span><br><span class="line">                <span class="keyword">if</span> statusCode <span class="operator">==</span> xxx &#123;</span><br><span class="line">                    <span class="comment">// 重发请求</span></span><br><span class="line">                    <span class="keyword">let</span> queue <span class="operator">=</span> <span class="type">DispatchQueue</span>(label: <span class="string">&quot;com.network.retry&quot;</span>, attributes: .concurrent)</span><br><span class="line">                    queue.asyncAfter(deadline: .now() <span class="operator">+</span> <span class="number">3</span>) &#123;</span><br><span class="line">                        <span class="keyword">self</span>.request(target, callbackQueue: callbackQueue, progress: progress, completion: completion)</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    completion(.success(response))</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">case</span> .failure(<span class="keyword">let</span> error):</span><br><span class="line">                completion(.failure(error))</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%9A%E6%AC%A1%E8%B0%83%E7%94%A8%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.</span> <span class="toc-text">多次调用接口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Moya-%E9%87%8D%E8%AF%95%E8%AF%B7%E6%B1%82"><span class="toc-number">2.</span> <span class="toc-text">Moya 重试请求</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&text=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&title=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&is_video=false&description=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Moya 在用户 token 失效情况下的请求重试&body=Check out this article: http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&title=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&title=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&title=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&title=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&name=Moya 在用户 token 失效情况下的请求重试&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2022/03/17/Moya-%E5%9C%A8%E7%94%A8%E6%88%B7-token-%E5%A4%B1%E6%95%88%E6%83%85%E5%86%B5%E4%B8%8B%E7%9A%84%E8%AF%B7%E6%B1%82%E9%87%8D%E8%AF%95/&t=Moya 在用户 token 失效情况下的请求重试"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2014-2023
+    Alexius
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+  <script async src="https://busuanzi.icodeq.com/busuanzi.pure.mini.js"></script>
+
+  <div>
+    本文总阅读量 <span id="busuanzi_value_page_pv"></span> 次
+    本站总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    本站总访客数 <span id="busuanzi_value_site_uv"></span> 人
+  </div>
+
+</footer>
+
+
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Disqus Comments -->
+
+
+</body>
+</html>

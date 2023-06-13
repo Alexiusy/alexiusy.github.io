@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="关于什么是并发，竞争和死锁等在这里就不讨论了。Golang 中实现并发系统的主要工具就是 goroutine。 1 GoroutineGoroutine 是一个独立于程序其余部分执行的函数，它的基本元素是一个函数。每个函数都可以成为 goroutine，只需要在函数调用之前添加 go 关键字。每个程序都存在一个 goroutine，那就是 main goroutine。 来看一个例子。 12345">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Golang 中的并发">
+<meta property="og:url" content="http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/index.html">
+<meta property="og:site_name" content="Alexius&#39;s Utopia">
+<meta property="og:description" content="关于什么是并发，竞争和死锁等在这里就不讨论了。Golang 中实现并发系统的主要工具就是 goroutine。 1 GoroutineGoroutine 是一个独立于程序其余部分执行的函数，它的基本元素是一个函数。每个函数都可以成为 goroutine，只需要在函数调用之前添加 go 关键字。每个程序都存在一个 goroutine，那就是 main goroutine。 来看一个例子。 12345">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.practical-go-lessons.com/img/channel_direction.812e0b41.png">
+<meta property="og:image" content="https://www.practical-go-lessons.com/img/select_statement_syntax.78dbdc87.png">
+<meta property="article:published_time" content="2021-03-15T02:20:12.000Z">
+<meta property="article:modified_time" content="2023-06-13T02:42:40.511Z">
+<meta property="article:author" content="Alexius">
+<meta property="article:tag" content="并发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.practical-go-lessons.com/img/channel_direction.812e0b41.png">
+    
+    
+        
+          
+              <link rel="shortcut icon" href="/images/favicon.ico">
+          
+        
+        
+          
+            <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+          
+        
+        
+          
+            <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+          
+        
+    
+    <!-- title -->
+    <title>Golang 中的并发</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2021/04/12/Golang-%E5%A6%82%E4%BD%95%E8%BF%9B%E8%A1%8C%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2021/02/14/Golang-%E5%8C%85%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96%E8%BF%87%E7%A8%8B/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&text=Golang 中的并发"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&title=Golang 中的并发"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&is_video=false&description=Golang 中的并发"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Golang 中的并发&body=Check out this article: http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&title=Golang 中的并发"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&title=Golang 中的并发"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&title=Golang 中的并发"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&title=Golang 中的并发"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&name=Golang 中的并发&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&t=Golang 中的并发"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-Goroutine"><span class="toc-number">1.</span> <span class="toc-text">1 Goroutine</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-Channel"><span class="toc-number">2.</span> <span class="toc-text">2 Channel</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-%E5%AE%9A%E4%B9%89"><span class="toc-number">2.1.</span> <span class="toc-text">2.1 定义</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-Channel-%E7%B1%BB%E5%9E%8B"><span class="toc-number">2.2.</span> <span class="toc-text">2.2 Channel 类型</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-3-Channel-%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">2.3.</span> <span class="toc-text">2.3 Channel 的初始化</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-4-%E4%BD%BF%E7%94%A8-channel-%E5%8F%91%E9%80%81%E6%95%B0%E6%8D%AE"><span class="toc-number">2.4.</span> <span class="toc-text">2.4 使用 channel 发送数据</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-5-%E5%85%B3%E9%97%AD-channel"><span class="toc-number">2.5.</span> <span class="toc-text">2.5 关闭 channel</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-6-%E6%8E%A5%E6%94%B6-channel-%E7%9A%84%E6%95%B0%E6%8D%AE"><span class="toc-number">2.6.</span> <span class="toc-text">2.6 接收 channel 的数据</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-7-%E6%97%A0%E7%BC%93%E5%86%B2-Channel"><span class="toc-number">2.7.</span> <span class="toc-text">2.7 无缓冲 Channel</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-8-%E7%BC%93%E5%86%B2-channel"><span class="toc-number">2.8.</span> <span class="toc-text">2.8 缓冲 channel</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-9-Channel-%E7%94%A8%E4%BE%8B"><span class="toc-number">2.9.</span> <span class="toc-text">2.9 Channel 用例</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#2-9-1-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5"><span class="toc-number">2.9.1.</span> <span class="toc-text">2.9.1 线程同步</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-10-%E6%AD%BB%E9%94%81"><span class="toc-number">2.10.</span> <span class="toc-text">2.10 死锁</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-11-Select-%E8%AF%AD%E5%8F%A5"><span class="toc-number">2.11.</span> <span class="toc-text">2.11 Select 语句</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-12-Wait-groups"><span class="toc-number">2.12.</span> <span class="toc-text">2.12 Wait groups</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-13-Mutexes"><span class="toc-number">2.13.</span> <span class="toc-text">2.13 Mutexes</span></a></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Golang 中的并发
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Alexius's Utopia</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-03-15T02:20:12.000Z" itemprop="datePublished">2021-03-15</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/categories/Golang/">Golang</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/%E5%B9%B6%E5%8F%91/" rel="tag">并发</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>关于什么是并发，竞争和死锁等在这里就不讨论了。Golang 中实现并发系统的主要工具就是 goroutine。</p>
+<h3 id="1-Goroutine"><a href="#1-Goroutine" class="headerlink" title="1 Goroutine"></a>1 Goroutine</h3><p>Goroutine 是一个独立于程序其余部分执行的函数，它的基本元素是一个函数。每个函数都可以成为 goroutine，只需要在函数调用之前添加 <code>go</code> 关键字。每个程序都存在一个 goroutine，那就是 main goroutine。</p>
+<p>来看一个例子。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	fmt.Println(<span class="string">&quot;Launch goroutine&quot;</span>)</span><br><span class="line">	<span class="keyword">go</span> printNumber()</span><br><span class="line">	time.Sleep(<span class="number">1</span> * time.Minute)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">printNumber</span><span class="params">()</span></span> &#123;</span><br><span class="line">	i := <span class="number">0</span></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		time.Sleep(<span class="number">1</span> * time.Second)</span><br><span class="line">		i++</span><br><span class="line">		fmt.Println(i)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>虽然 main 函数睡眠了1分钟，但是 printNumber 函数还是会照常执行。</p>
+<h3 id="2-Channel"><a href="#2-Channel" class="headerlink" title="2 Channel"></a>2 Channel</h3><h4 id="2-1-定义"><a href="#2-1-定义" class="headerlink" title="2.1 定义"></a>2.1 定义</h4><p>Channel  是一种类型化的通信管道。Goroutine 可以通过通道相互通信。通道可以看作是两个 goroutine 之间的数据管道。此管道只能支持特定类型。</p>
+<h4 id="2-2-Channel-类型"><a href="#2-2-Channel-类型" class="headerlink" title="2.2 Channel 类型"></a>2.2 Channel 类型</h4><p>Channel 分为 3 种类型，分别是：</p>
+<ul>
+<li>只能发送，语法为：chan &lt;- T（T 为 channel 所支持的类型，下同）</li>
+<li>只能接收，语法为：&lt;- chan T</li>
+<li>双向，语法为：chan T<br><img src="https://www.practical-go-lessons.com/img/channel_direction.812e0b41.png" alt="channel的三种类型"></li>
+</ul>
+<h4 id="2-3-Channel-的初始化"><a href="#2-3-Channel-的初始化" class="headerlink" title="2.3 Channel 的初始化"></a>2.3 Channel 的初始化</h4><p>Channel 同样使用 Go 内建的 make 函数进行初始化。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1</span></span><br><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">int</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2</span></span><br><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">int</span>, <span class="number">3</span>)</span><br></pre></td></tr></table></figure>
+<p>第一种方式创建了一个 int 类型的不带缓冲的 channel，它等价于 <code>make(chan int, 0)</code>，第二种方式创建了一个 int 类型缓冲大小为 3 的 channel。</p>
+<p>可以通过 <code>len</code> 函数获取 channel 中的元素个数，<code>cap</code> 函数则可以获取到 channel 的缓冲区大小。</p>
+<h4 id="2-4-使用-channel-发送数据"><a href="#2-4-使用-channel-发送数据" class="headerlink" title="2.4 使用 channel 发送数据"></a>2.4 使用 channel 发送数据</h4><p>使用 <code>&lt;-</code> 来表示将数据发送到这个 channel，这个符号代表数据从右边流动到左边。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">int</span>, <span class="number">3</span>)</span><br><span class="line">ch &lt;- <span class="number">42</span></span><br></pre></td></tr></table></figure>
+<p>上面的代码初始化了一个缓存为3的 channel，然后将 42 发送到这个 channel。</p>
+<p>发送数据需要注意一些特性：</p>
+<ol>
+<li>channel 和表达式在通信之前执行；</li>
+<li>仅在 channel 打开的时候可以发送，如果是 close 的时候发送则会引起程序 panic；</li>
+<li>如果 channel 为 nil，向其发送数据会永久阻塞程序执行。</li>
+</ol>
+<h4 id="2-5-关闭-channel"><a href="#2-5-关闭-channel" class="headerlink" title="2.5 关闭 channel"></a>2.5 关闭 channel</h4><p>使用内建的 close 函数来关闭 channel，关闭 channel 意味着不再有数据发送从这个 channel 发送。</p>
+<ul>
+<li>无法关闭一个仅接收的 channel；</li>
+<li>无法向一个关闭的 channel 发送数据；</li>
+<li>无法关闭一个已经关闭的 channel；</li>
+<li>可以从一个已经关闭的 channel 接收数据。<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">int</span>, <span class="number">3</span>)</span><br><span class="line">ch &lt;- <span class="number">42</span></span><br><span class="line"><span class="built_in">close</span>(ch)</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="2-6-接收-channel-的数据"><a href="#2-6-接收-channel-的数据" class="headerlink" title="2.6 接收 channel 的数据"></a>2.6 接收 channel 的数据</h4><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">int</span>, <span class="number">3</span>)</span><br><span class="line">ch &lt;- <span class="number">42</span></span><br><span class="line">ch &lt;- <span class="number">41</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 1</span></span><br><span class="line">val := &lt;- ch</span><br><span class="line">fmt.Println(val)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2</span></span><br><span class="line">val, ok := &lt;- ch</span><br><span class="line"><span class="keyword">if</span> !ok &#123;</span><br><span class="line">	fmt.Println(<span class="string">&quot;Channel is empty or closed.&quot;</span>)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">	fmt.Println(val)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在方式 1 中，使用变量 val 来接收 channel 中的数据，输出为 42。<br>方式 2 中，使用了两个变量来接收 channel 的数据，ok 用来判断 channel 是否为空或者是否已关闭。ok 为 true 则 val 能正常接收到数据，ok 为 false 则表示 channel 为空或已关闭。本例中，输出为 42。</p>
+<h4 id="2-7-无缓冲-Channel"><a href="#2-7-无缓冲-Channel" class="headerlink" title="2.7 无缓冲 Channel"></a>2.7 无缓冲 Channel</h4><p>当向无缓冲的 channel 发送数据时，goroutine 会被阻塞，直到数据被另一个 goroutine 接收。这是因为 channel 没有缓冲来存储发送的数据，因此当前 goroutine 阻塞。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line">	<span class="string">&quot;time&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">int</span>)</span><br><span class="line">	<span class="keyword">go</span> printNumber(ch)</span><br><span class="line"></span><br><span class="line">	log.Println(<span class="string">&quot;Launch goroutine&quot;</span>)</span><br><span class="line">	ch &lt;- <span class="number">42</span></span><br><span class="line">	log.Println(<span class="string">&quot;Received&quot;</span>)</span><br><span class="line"></span><br><span class="line">	time.Sleep(time.Minute * <span class="number">1</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">printNumber</span><span class="params">(ch <span class="keyword">chan</span> <span class="type">int</span>)</span></span> &#123;</span><br><span class="line">	time.Sleep(time.Second * <span class="number">3</span>)</span><br><span class="line">	val := &lt;-ch</span><br><span class="line">	log.Println(val)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">2022/09/09 08:51:23 Launch goroutine</span><br><span class="line">2022/09/09 08:51:26 Received</span><br><span class="line">2022/09/09 08:51:26 42</span><br></pre></td></tr></table></figure>
+<p>可以看到，因为 channel 没有缓冲，并且接收数据的 goroutine 睡眠了 3 秒，因此发送数据的 channel 阻塞了 3 秒才继续执行。 </p>
+<h4 id="2-8-缓冲-channel"><a href="#2-8-缓冲-channel" class="headerlink" title="2.8 缓冲 channel"></a>2.8 缓冲 channel</h4><p>将前一节的 <code>ch := make(chan int)</code> 修改为 <code>ch := make(chan int, 1)</code> ，执行后输出如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">2022/09/09 08:59:50 Launch goroutine </span><br><span class="line">2022/09/09 08:59:50 Received</span><br><span class="line">2022/09/09 08:59:53 42</span><br></pre></td></tr></table></figure>
+<p>可以看到，带有缓冲的 channel 因为有缓冲区，因此在缓冲区还未满的时候发送数据不会被阻塞。</p>
+<h4 id="2-9-Channel-用例"><a href="#2-9-Channel-用例" class="headerlink" title="2.9 Channel 用例"></a>2.9 Channel 用例</h4><h5 id="2-9-1-线程同步"><a href="#2-9-1-线程同步" class="headerlink" title="2.9.1 线程同步"></a>2.9.1 线程同步</h5><p>无缓冲 channel 可用来实现两个 goroutine 之间的同步。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;time&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	syncCh := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">bool</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		process2()</span><br><span class="line">		syncCh &lt;- <span class="literal">true</span></span><br><span class="line">	&#125;()</span><br><span class="line">	process1()</span><br><span class="line">	&lt;- syncCh</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">process2</span><span class="params">()</span></span> &#123;</span><br><span class="line">	time.Sleep(time.Second * <span class="number">1</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">process1</span><span class="params">()</span></span> &#123;</span><br><span class="line">	time.Sleep(time.Second * <span class="number">3</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接收操作 <code>&lt;-syncCh</code>  一直阻塞，直到另一个 goroutine 完成。为了表示它已经完成，第二个 goroutine 将在通道中发送值 <code>true</code>。</p>
+<h4 id="2-10-死锁"><a href="#2-10-死锁" class="headerlink" title="2.10 死锁"></a>2.10 死锁</h4><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;log&quot;</span> </span><br><span class="line">) </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123; </span><br><span class="line">	ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">int</span>, <span class="number">1</span>)</span><br><span class="line">	<span class="keyword">go</span> receive(ch)</span><br><span class="line">	log.Println(<span class="string">&quot;waiting for reception...&quot;</span>) </span><br><span class="line">	ch &lt;- <span class="number">45</span></span><br><span class="line">	ch &lt;- <span class="number">58</span> </span><br><span class="line">	ch &lt;- <span class="number">100</span> </span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">receive</span><span class="params">(c <span class="keyword">chan</span> <span class="type">int</span>)</span></span> &#123; </span><br><span class="line">	smth := &lt;-c </span><br><span class="line">	log.Println(<span class="string">&quot;has received something&quot;</span>, smth) </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>初始化一个缓冲大小为 1 的 channel，然后将45，58，100 三个数字传给 channel，receive 函数中会接收45，58可以存储在缓冲中，而 100 则因为没有多余的空间存储，所以会阻塞main goroutine 而无限地等待下去。</p>
+<h4 id="2-11-Select-语句"><a href="#2-11-Select-语句" class="headerlink" title="2.11 Select 语句"></a>2.11 Select 语句</h4><ul>
+<li>Select 语句类似于其它语言中的 <code>switch case</code> ，只不过是用于通信操作。</li>
+<li>Select 语句中有多个 <code>case</code> 和可选的 <code>default</code> 实现。</li>
+<li>第一个非阻塞选项将会被选中。</li>
+<li>如果有两个或更多的未阻塞 case，则采用统一伪随机选择一个。</li>
+<li>如果所有 <code>case</code> 都被阻塞，则会执行 <code>default</code> 。<br><img src="https://www.practical-go-lessons.com/img/select_statement_syntax.78dbdc87.png" alt="select 执行逻辑"></li>
+</ul>
+<h4 id="2-12-Wait-groups"><a href="#2-12-Wait-groups" class="headerlink" title="2.12 Wait groups"></a>2.12 Wait groups</h4><p>Wait group 是标准库提供的一种同步工具，它可以用在等待一组 goroutine 完成它们的任务。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> waitGroup sync.WaitGroup</span><br><span class="line">	<span class="comment">// wait counter +10</span></span><br><span class="line">	waitGroup.Add(<span class="number">10</span>)</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">		<span class="keyword">go</span> concurrentTask(i, &amp;waitGroup)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 阻塞当前 goroutine，直到wait counter为0</span></span><br><span class="line">	waitGroup.Wait()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">concurrentTask</span><span class="params">(taskId <span class="type">int</span>, waitGroup *sync.WaitGroup)</span></span> &#123;</span><br><span class="line">	time.Sleep(time.Millisecond * <span class="number">100</span>)</span><br><span class="line">	<span class="comment">// 将wait counter -1</span></span><br><span class="line">	waitGroup.Done()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-13-Mutexes"><a href="#2-13-Mutexes" class="headerlink" title="2.13 Mutexes"></a>2.13 Mutexes</h4><p>Mutex 是一种同步工具，Mutex 是 Mutual Exclusion 的缩写。当两件事情不能同时发生的时候我们称之为互斥。可以使用互斥来避免数据竞争。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> number <span class="type">int</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> group sync.WaitGroup</span><br><span class="line">	group.Add(<span class="number">10</span>)</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">		<span class="keyword">go</span> increment(&amp;group)</span><br><span class="line">	&#125;</span><br><span class="line">	group.Wait()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">increment</span><span class="params">(group *sync.WaitGroup)</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> j := <span class="number">0</span>; j &lt; <span class="number">100</span>; j++ &#123;</span><br><span class="line">		number++</span><br><span class="line">		log.Println(number)</span><br><span class="line">	&#125;</span><br><span class="line">	group.Done()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上代码开了10个 goroutine，每个goroutine对变量number执行100次+1。但是执行结果很可能并不是我们所期待的1000。这是因为产生了data race，有 goroutine 同时修改了 number，导致最终数据不正确。</p>
+<p>只要将代码稍加修改，也就是加了一把互斥锁就能正确执行了。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> number <span class="type">int</span></span><br><span class="line"><span class="keyword">var</span> mutext sync.Mutex</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> group sync.WaitGroup</span><br><span class="line">	group.Add(<span class="number">10</span>)</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">		<span class="keyword">go</span> increment(&amp;group)</span><br><span class="line">	&#125;</span><br><span class="line">	group.Wait()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">increment</span><span class="params">(group *sync.WaitGroup)</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> j := <span class="number">0</span>; j &lt; <span class="number">100</span>; j++ &#123;</span><br><span class="line">		mutex.Lock()</span><br><span class="line">		number++</span><br><span class="line">		mutex.Unlock()mutex</span><br><span class="line">		log.Println(number)</span><br><span class="line">	&#125;</span><br><span class="line">	group.Done()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-Goroutine"><span class="toc-number">1.</span> <span class="toc-text">1 Goroutine</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-Channel"><span class="toc-number">2.</span> <span class="toc-text">2 Channel</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-%E5%AE%9A%E4%B9%89"><span class="toc-number">2.1.</span> <span class="toc-text">2.1 定义</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-Channel-%E7%B1%BB%E5%9E%8B"><span class="toc-number">2.2.</span> <span class="toc-text">2.2 Channel 类型</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-3-Channel-%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">2.3.</span> <span class="toc-text">2.3 Channel 的初始化</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-4-%E4%BD%BF%E7%94%A8-channel-%E5%8F%91%E9%80%81%E6%95%B0%E6%8D%AE"><span class="toc-number">2.4.</span> <span class="toc-text">2.4 使用 channel 发送数据</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-5-%E5%85%B3%E9%97%AD-channel"><span class="toc-number">2.5.</span> <span class="toc-text">2.5 关闭 channel</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-6-%E6%8E%A5%E6%94%B6-channel-%E7%9A%84%E6%95%B0%E6%8D%AE"><span class="toc-number">2.6.</span> <span class="toc-text">2.6 接收 channel 的数据</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-7-%E6%97%A0%E7%BC%93%E5%86%B2-Channel"><span class="toc-number">2.7.</span> <span class="toc-text">2.7 无缓冲 Channel</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-8-%E7%BC%93%E5%86%B2-channel"><span class="toc-number">2.8.</span> <span class="toc-text">2.8 缓冲 channel</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-9-Channel-%E7%94%A8%E4%BE%8B"><span class="toc-number">2.9.</span> <span class="toc-text">2.9 Channel 用例</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#2-9-1-%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5"><span class="toc-number">2.9.1.</span> <span class="toc-text">2.9.1 线程同步</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-10-%E6%AD%BB%E9%94%81"><span class="toc-number">2.10.</span> <span class="toc-text">2.10 死锁</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-11-Select-%E8%AF%AD%E5%8F%A5"><span class="toc-number">2.11.</span> <span class="toc-text">2.11 Select 语句</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-12-Wait-groups"><span class="toc-number">2.12.</span> <span class="toc-text">2.12 Wait groups</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-13-Mutexes"><span class="toc-number">2.13.</span> <span class="toc-text">2.13 Mutexes</span></a></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&text=Golang 中的并发"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&title=Golang 中的并发"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&is_video=false&description=Golang 中的并发"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Golang 中的并发&body=Check out this article: http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&title=Golang 中的并发"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&title=Golang 中的并发"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&title=Golang 中的并发"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&title=Golang 中的并发"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&name=Golang 中的并发&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2021/03/15/Golang%20%E4%B8%AD%E7%9A%84%E5%B9%B6%E5%8F%91/&t=Golang 中的并发"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2014-2023
+    Alexius
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+  <script async src="https://busuanzi.icodeq.com/busuanzi.pure.mini.js"></script>
+
+  <div>
+    本文总阅读量 <span id="busuanzi_value_page_pv"></span> 次
+    本站总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    本站总访客数 <span id="busuanzi_value_site_uv"></span> 人
+  </div>
+
+</footer>
+
+
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Disqus Comments -->
+
+
+</body>
+</html>

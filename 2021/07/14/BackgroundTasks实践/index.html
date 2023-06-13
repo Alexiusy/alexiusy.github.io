@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="description" content="BackgroundTasks  框架包含两种后台任务，一种是用于后台更新应用程序内容的 BGAppRefreshTask，一种是用于执行繁重任务比如模型训练、数据同步等的 BGProcessingTask。 ^a71227 由于两种后台任务的开启方式大同小异，所以接下来的内容主要以 BGAppRefreshTask 来进行。 1. 开启后台任务的前期准备为了让应用程序能够支持后台任务执行，首先要">
+<meta property="og:type" content="article">
+<meta property="og:title" content="BackgroundTasks实践">
+<meta property="og:url" content="http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/index.html">
+<meta property="og:site_name" content="Alexius&#39;s Utopia">
+<meta property="og:description" content="BackgroundTasks  框架包含两种后台任务，一种是用于后台更新应用程序内容的 BGAppRefreshTask，一种是用于执行繁重任务比如模型训练、数据同步等的 BGProcessingTask。 ^a71227 由于两种后台任务的开启方式大同小异，所以接下来的内容主要以 BGAppRefreshTask 来进行。 1. 开启后台任务的前期准备为了让应用程序能够支持后台任务执行，首先要">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-07-14T09:05:30.000Z">
+<meta property="article:modified_time" content="2023-06-13T02:42:40.511Z">
+<meta property="article:author" content="Alexius">
+<meta property="article:tag" content="后台任务">
+<meta name="twitter:card" content="summary">
+    
+    
+        
+          
+              <link rel="shortcut icon" href="/images/favicon.ico">
+          
+        
+        
+          
+            <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+          
+        
+        
+          
+            <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+          
+        
+    
+    <!-- title -->
+    <title>BackgroundTasks实践</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+      
+<link rel="stylesheet" href="/css/rtl.css">
+
+    
+    <!-- rss -->
+    
+    
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" href="/2021/12/17/UILabel%E8%B6%85%E8%BF%87%E6%8C%87%E5%AE%9A%E8%A1%8C%E6%95%B0%E6%97%B6%E6%98%BE%E7%A4%BA%E6%9B%B4%E5%A4%9A/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" href="/2021/05/12/iOS-%E4%B8%AD%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E5%90%8E%E5%8F%B0%E4%B8%8B%E8%BD%BD/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&text=BackgroundTasks实践"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&title=BackgroundTasks实践"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&is_video=false&description=BackgroundTasks实践"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=BackgroundTasks实践&body=Check out this article: http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&title=BackgroundTasks实践"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&title=BackgroundTasks实践"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&title=BackgroundTasks实践"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&title=BackgroundTasks实践"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&name=BackgroundTasks实践&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&t=BackgroundTasks实践"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E5%BC%80%E5%90%AF%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%89%8D%E6%9C%9F%E5%87%86%E5%A4%87"><span class="toc-number">1.</span> <span class="toc-text">1. 开启后台任务的前期准备</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E6%B3%A8%E5%86%8C%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1"><span class="toc-number">2.</span> <span class="toc-text">2. 注册后台任务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E5%90%AF%E5%8A%A8%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1"><span class="toc-number">3.</span> <span class="toc-text">3. 启动后台任务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E6%A8%A1%E6%8B%9F%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%90%AF%E5%8A%A8%E5%92%8C%E5%A4%B1%E6%95%88"><span class="toc-number">4.</span> <span class="toc-text">4. 模拟后台任务的启动和失效</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        BackgroundTasks实践
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Alexius's Utopia</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-07-14T09:05:30.000Z" itemprop="datePublished">2021-07-14</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/categories/iOS/">iOS</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1/" rel="tag">后台任务</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>BackgroundTasks  框架包含两种后台任务，一种是用于后台更新应用程序内容的 <code>BGAppRefreshTask</code>，一种是用于执行繁重任务比如模型训练、数据同步等的 <code>BGProcessingTask</code>。 ^a71227</p>
+<p>由于两种后台任务的开启方式大同小异，所以接下来的内容主要以 <code>BGAppRefreshTask</code> 来进行。</p>
+<h3 id="1-开启后台任务的前期准备"><a href="#1-开启后台任务的前期准备" class="headerlink" title="1. 开启后台任务的前期准备"></a>1. 开启后台任务的前期准备</h3><p>为了让应用程序能够支持后台任务执行，首先要让应用程序支持后台任务。选中应用程序对应的 target，在 Capability 一栏中搜索 <code>Background Modes</code> 并添加（如果已添加则跳过），将 <code>Background fetch</code> 勾选上（如果是 <code>BGProcessingTask</code> 则需要勾选 <code>Background processing</code>）。之后打开 <code>Info.plist</code>，添加一个新的属性 <code>Permitted background task scheduler identifiers</code>，这是一个数组类型，在数组种添加一个字符串类型新项目，这即是后台任务的 identifier，每个后台任务都需要有一个 identifier。identifier 的名字建议还是以 com.app.taskName 的格式来命名，此处设置为 com.demo.refresh。</p>
+<h3 id="2-注册后台任务"><a href="#2-注册后台任务" class="headerlink" title="2. 注册后台任务"></a>2. 注册后台任务</h3><p>在应用程序启动时，我们需要使用 <code>BGTaskScheduler</code> 的单例来注册后台任务。<code>BGTaskScheduler</code> 是一个用于调度在后台启动应用程序的任务请求的类。调用 <code>register(forTaskWithIdentifier:using:launchHandler:)</code> 注册后台任务。注册方法一共需要传递 3 个参数。<br>第一个是后台任务的 identifier，也即之前在 Info.plist 添加的 identifier。<br>第二个参数是一个线程队列，此队列必须是串行的，以保证一致的顺序，可以传 nil，系统会自动运行在一个默认的后台队列上。<br>第三个参数 <code>launchHandler</code> 会在后台任务被触发时被调用，闭包包含一个 <code>BGTask</code> 参数，在闭包中要设置 task 的 <code>expirationHandler</code> 以及要在所有任务结束后调用 <code>setTaskCompletedWithSuccess:</code>。</p>
+<p>需要注意的是，注册必须在应用程序启动完成之前执行，如果是在启动完成之后或是注册多个相同 identifier 的任务会报错，且注册只能在宿主应用而不是扩展中注册。</p>
+<p>上述完整代码如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> <span class="title function_">application</span>(<span class="keyword">_</span> <span class="params">application</span>: <span class="type">UIApplication</span>, <span class="params">didFinishLaunchingWithOptions</span> <span class="params">launchOptions</span>: [<span class="type">UIApplication</span>.<span class="params">LaunchOptionsKey</span>: <span class="keyword">Any</span>]<span class="operator">?</span>) -&gt; <span class="type">Bool</span> &#123;</span><br><span class="line">	<span class="comment">// Override point for customization after application launch.</span></span><br><span class="line">	<span class="type">BGTaskScheduler</span>.shared.register(forTaskWithIdentifier: <span class="string">&quot;com.demo.refresh&quot;</span>, using: <span class="literal">nil</span>) &#123; task <span class="keyword">in</span></span><br><span class="line">		<span class="comment">// 因为这是一个刷新的Task，所以要强转</span></span><br><span class="line">		<span class="keyword">self</span>.handleAppRefresh(task <span class="keyword">as!</span> <span class="type">BGAppRefreshTask</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">func</span> <span class="title function_">handleAppRefresh</span>(<span class="keyword">_</span> <span class="params">task</span>: <span class="type">BGAppRefreshTask</span>) &#123;</span><br><span class="line">	<span class="comment">// 再次启动</span></span><br><span class="line">	<span class="comment">// scheduleAppRefresh()    </span></span><br><span class="line">	<span class="comment">/* 执行任务 operation */</span></span><br><span class="line">	operation.finished <span class="operator">=</span> &#123;</span><br><span class="line">		task.setTaskCompleted(success: <span class="literal">true</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">    task.expirationHandler <span class="operator">=</span> &#123;</span><br><span class="line">        <span class="comment">// cancel refresh operation</span></span><br><span class="line">        operation.cancel()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-启动后台任务"><a href="#3-启动后台任务" class="headerlink" title="3. 启动后台任务"></a>3. 启动后台任务</h3><p>做好了前面的准备，我们终于可以启动我们的后台任务了。那么什么时候启动后台任务呢？最佳的时机应该是应用进入到后台的时候。所以在<code>applicationDidEnterBackground</code> 或者 <code>sceneDidEnterBackground</code> 中调用启动后台任务。</p>
+<p>我们使用 <code>BGAppRefreshTaskRequest</code> 来创建一个后台任务请求，然后将请求提交到 <code>BGTaskScheduler</code>。请求有一个 <code>earliestBeginDate</code> 用来表示后台任务最早可以在什么时候开始，可以设置为一周以内的时间，此处我们设置了 30 分钟。</p>
+<p><code>BGProcessingTaskRequest</code> 还有两外两个参数可以设置：</p>
+<ul>
+<li>requiresNetworkConnectivity，是否需要网络，默认为 false。如果设置为 true，则后台任务只会在联网状态下才会启动；</li>
+<li>requiresExternalPower，是否需要外部电源，也就是充电状态，默认为 false。如果设置为 true 则只会在充电状态下才会启动后台任务。需要注意的是，即使设置为 false，后台任务也不一定会启动，这取决于设备和系统的状态。</li>
+</ul>
+<p>启动和提交后台任务的代码如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">func</span> <span class="title function_">scheduleAppRefresh</span>() &#123;</span><br><span class="line">	<span class="keyword">let</span> request <span class="operator">=</span> <span class="type">BGAppRefreshTaskRequest</span>(identifier: <span class="string">&quot;com.demo.refresh&quot;</span>)</span><br><span class="line">    request.earliestBeginDate <span class="operator">=</span> <span class="type">Date</span>(timeIntervalSinceNow: <span class="number">30</span> <span class="operator">*</span> <span class="number">60</span>)</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">	    <span class="keyword">try</span> <span class="type">BGTaskScheduler</span>.shared.submit(request)</span><br><span class="line">	&#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">		<span class="built_in">print</span>(<span class="string">&quot;Could not schedule app refresh: <span class="subst">\(error)</span>&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>因为后台任务只会响应一次，所以要在接收到后台任务响应的时候再次启动才能让后台任务一直存在，也就是 <code>handleAppRefresh</code> 方法中注释的第一行。</p>
+</blockquote>
+<h3 id="4-模拟后台任务的启动和失效"><a href="#4-模拟后台任务的启动和失效" class="headerlink" title="4. 模拟后台任务的启动和失效"></a>4. 模拟后台任务的启动和失效</h3><p>由于后台任务是由系统来控制执行时机，所以开发者无法确定相关代码什么时候会执行，这样就不利于调试，不过我们可以模拟相关事件的产生。</p>
+<p>模拟后台任务启动，我们先将应用程序运行起来，进入后台，再进入前台，此时按下暂停，在调试窗口输入如下代码后回车：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@&quot;com.demo.refresh&quot;]</span><br></pre></td></tr></table></figure>
+<p>如果没有意外的话，控制台会输出 <code>Simulating launch for task with identifier com.demo.refresh</code>。这表示后台程序已经执行了。</p>
+<p>模拟后台任务过期的代码如下，和模拟启动基本一致，就不再赘述。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateExpirationForTaskWithIdentifier:@&quot;com.demo.refresh&quot;]</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>模拟后台任务的启动和过期时不能使用模拟器，必须使用真机，且要将手机设置中的 <code>后台App 刷新</code> 开关打开，不然模拟会报错 <code>BGTaskSchedulerErrorCodeUnavailable</code>。</p>
+</blockquote>
+<blockquote>
+<p><strong>参考资料</strong><br><a target="_blank" rel="noopener" href="https://developer.apple.com/videos/play/wwdc2019/707">Advances in App Background Execution</a><br><a target="_blank" rel="noopener" href="https://developer.apple.com/documentation/backgroundtasks/bgtaskscheduler/error/code">BGTaskScheduler.Error.Code</a></p>
+</blockquote>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E5%BC%80%E5%90%AF%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%89%8D%E6%9C%9F%E5%87%86%E5%A4%87"><span class="toc-number">1.</span> <span class="toc-text">1. 开启后台任务的前期准备</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E6%B3%A8%E5%86%8C%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1"><span class="toc-number">2.</span> <span class="toc-text">2. 注册后台任务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E5%90%AF%E5%8A%A8%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1"><span class="toc-number">3.</span> <span class="toc-text">3. 启动后台任务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E6%A8%A1%E6%8B%9F%E5%90%8E%E5%8F%B0%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%90%AF%E5%8A%A8%E5%92%8C%E5%A4%B1%E6%95%88"><span class="toc-number">4.</span> <span class="toc-text">4. 模拟后台任务的启动和失效</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&text=BackgroundTasks实践"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&title=BackgroundTasks实践"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&is_video=false&description=BackgroundTasks实践"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=BackgroundTasks实践&body=Check out this article: http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&title=BackgroundTasks实践"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&title=BackgroundTasks实践"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&title=BackgroundTasks实践"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&title=BackgroundTasks实践"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&name=BackgroundTasks实践&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://yoursite.com/2021/07/14/BackgroundTasks%E5%AE%9E%E8%B7%B5/&t=BackgroundTasks实践"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2014-2023
+    Alexius
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+         
+          <li><a href="/">首页</a></li>
+         
+          <li><a href="/archives/">归档</a></li>
+         
+          <li><a href="/categories/">分类</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/alexiusy">项目</a></li>
+         
+          <li><a href="/custom/cv.html">关于</a></li>
+        
+      </ul>
+    </nav>
+  </div>
+  <script async src="https://busuanzi.icodeq.com/busuanzi.pure.mini.js"></script>
+
+  <div>
+    本文总阅读量 <span id="busuanzi_value_page_pv"></span> 次
+    本站总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    本站总访客数 <span id="busuanzi_value_site_uv"></span> 人
+  </div>
+
+</footer>
+
+
+
+    </div>
+    <!-- styles -->
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+
+<link rel="stylesheet" href="/lib/justified-gallery/css/justifiedGallery.min.css">
+
+
+    <!-- jquery -->
+
+<script src="/lib/jquery/jquery.min.js"></script>
+
+
+<script src="/lib/justified-gallery/js/jquery.justifiedGallery.min.js"></script>
+
+<!-- clipboard -->
+
+  
+<script src="/lib/clipboard/clipboard.min.js"></script>
+
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Disqus Comments -->
+
+
+</body>
+</html>
